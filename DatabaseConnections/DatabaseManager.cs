@@ -7,7 +7,7 @@ namespace DatabaseConnections
     {
         AlterTable alterTable = new AlterTable();
 
-        public void createTable() =>alterTable.createTable("Employee", "EmployeeID", "INT", true);
+
     }
 
     public class DatabaseConnection
@@ -26,18 +26,22 @@ namespace DatabaseConnections
 
         SqlCommand cmd = new SqlCommand();
         SqlConnection con = DatabaseConnection.con;
-        public void createTable(string tableName, string columnName, string dataType, bool primaryKey)
+        public void CreateTable(string tableName, string columnName, string dataType, bool primaryKey)
         {
-                switch (primaryKey)
+            tableName= tableName.Trim().ToUpper();
+            columnName= columnName.Trim().ToUpper();
+            dataType= dataType.Trim().ToUpper();
+            switch (primaryKey)
                 {
                     case true:
                         dataType += " PRIMARY KEY";
                         break;
                     case false:
                         break;
-                }
+                }//PRİMARY KEY KONTROLU VARSAYILAN FALSE - Primary key check
             try 
             {
+
                 con.Open();                
                 cmd.Connection = con;
                 cmd.CommandText = $"CREATE TABLE {tableName} ({columnName} {dataType})";// SQL INJECTION VULNERABILITY
@@ -50,15 +54,60 @@ namespace DatabaseConnections
             }
             catch (Exception ex)
             {
-                Console.WriteLine(state.GetState(false)+ "\t"+ ex.Message);
-                
+                state.printState(ex);               
+
             }
 
 
         }
         public void AddColumn(string tableName,string columnName, string dataType,bool primaryKey)
-        {
-           con.Open();
+        {        // NULLABLE KONTROLÜ YOK
+
+            tableName = tableName.Trim().ToUpper();
+            columnName = columnName.Trim().ToUpper();
+            dataType = dataType.Trim().ToUpper();
+            try
+            {
+                con.Open();
+                cmd.Connection = con;
+                cmd.CommandText = $"ALTER TABLE {tableName} ADD {columnName} {dataType}";// SQL INJECTION VULNERABILITY               
+                cmd.ExecuteNonQuery();
+                state.GetState(true);
+                
+            }
+            catch (Exception ex)
+            {
+              state.printState(ex);
+            }
+            finally {con.Close(); }
+
+
+
+        }
+        public void AddColumn(string tableName, string columnName, string dataType, bool primaryKey, string nullAble)
+        {       // NULLABLE KONTROLÜ VAR
+            nullAble = nullAble.ToUpper();
+            if (nullAble.StartsWith("NOT")) { nullAble = "NOT NULL"; } //NOT İLE BAŞLAMASI YETERLİ NULL OLMAMASI İÇİN
+            else { nullAble = ""; }//NULL OLABİLİR
+            tableName = tableName.Trim().ToUpper();
+            columnName = columnName.Trim().ToUpper();
+            dataType = dataType.Trim().ToUpper();
+            try
+            {
+                con.Open();
+                cmd.Connection = con;
+                cmd.CommandText = $"ALTER TABLE {tableName} ADD {columnName} {dataType} {nullAble}";// SQL INJECTION VULNERABILITY               
+                cmd.ExecuteNonQuery();
+                state.GetState(true);
+
+            }
+            catch (Exception ex)
+            {
+                state.printState(ex);
+            }
+            finally { con.Close(); }
+
+
 
         }
         public void DropColumn(string columnName)
@@ -101,10 +150,13 @@ namespace DatabaseConnections
         {
             if (success)            
                 return "Operation completed successfully";
-            
-            else           
-                return "Operation failed";           
-            
-        }      
+
+            return"An error has been occured";
+        }
+        public void printState(Exception ex)
+        {
+            Console.WriteLine("An error has been occured : "+ex.Message);
+        }
     }
+   
 }
