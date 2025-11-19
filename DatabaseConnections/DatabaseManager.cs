@@ -1,5 +1,6 @@
-﻿using System.Data.SqlClient;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Data.SqlClient;
 using System.Runtime.InteropServices;
 namespace DatabaseConnections
 {
@@ -7,6 +8,14 @@ namespace DatabaseConnections
     {
         AlterTable alterTable = new AlterTable();
 
+        public void createTable(string tableName, string columnName, string dataType, bool primaryKey)=> 
+            alterTable.CreateTable(tableName,columnName,dataType,primaryKey);
+        public void addColumn(string tableName, string columnName, string dataType, bool primaryKey) => 
+            alterTable.AddColumn(tableName,columnName,dataType,primaryKey);
+        public void addColumn(string tableName, string columnName, string dataType, bool primaryKey,string nullAble) => 
+            alterTable.AddColumn(tableName, columnName, dataType, primaryKey,nullAble);
+        public void dropColumn(string tableName,string columnName) => 
+            alterTable.DropColumn(tableName,columnName);
 
     }
 
@@ -62,7 +71,7 @@ namespace DatabaseConnections
         }
         public void AddColumn(string tableName,string columnName, string dataType,bool primaryKey)
         {        // NULLABLE KONTROLÜ YOK
-
+            
             tableName = tableName.Trim().ToUpper();
             columnName = columnName.Trim().ToUpper();
             dataType = dataType.Trim().ToUpper();
@@ -83,7 +92,7 @@ namespace DatabaseConnections
 
 
 
-        }
+        }//NULLABLE
         public void AddColumn(string tableName, string columnName, string dataType, bool primaryKey, string nullAble)
         {       // NULLABLE KONTROLÜ VAR
             nullAble = nullAble.ToUpper();
@@ -109,10 +118,27 @@ namespace DatabaseConnections
 
 
 
-        }
-        public void DropColumn(string columnName)
+        }//CAN USE FOR NOT NULL
+        public void DropColumn(string tableName,string columnName)
         {
-            // Implementation for dropping a column
+            tableName = tableName.Trim().ToUpper();
+            columnName = columnName.Trim().ToUpper();
+            try
+            {
+                con.Open();
+                cmd.Connection = con;
+                cmd.CommandText = $"ALTER TABLE {tableName} DROP COLUMN {columnName}";
+                cmd.Parameters.AddWithValue("@",columnName);
+                cmd.ExecuteNonQuery();
+                state.GetState(true);
+            }
+
+            catch (Exception ex)
+            {
+                state.printState(ex);
+            }
+            finally { con.Close(); }
+
         }
         public void RenameColumn(string oldName, string newName)
         {
@@ -156,6 +182,30 @@ namespace DatabaseConnections
         public void printState(Exception ex)
         {
             Console.WriteLine("An error has been occured : "+ex.Message);
+        }
+
+        public bool DataTypeController(string dataType)  // EMİN DEĞİLİM BU GELİŞTİRİLEBİLİR DAHA AZ KARMAŞIK BİR YAPI KURULABİLİR
+        {// PROBLEM => TEMEL TİPLER KABUL EDİLİYOR AMA VARCHAR(50) GİBİ BİR DEĞER GELİRSE BU NASIL KABUL EDİLİR 
+            dataType = dataType.Trim().ToLower();
+            for(int i = 0; i < dataType.Length;)
+            {
+                char c = dataType[i];
+                if(c == '(')
+                {
+
+                }
+            }
+
+            switch (dataType)
+            {
+                case "bigint":
+                case "binary":
+                    return true;
+
+                default:return false;
+            }
+            
+
         }
     }
    

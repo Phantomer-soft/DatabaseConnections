@@ -5,9 +5,12 @@ public static class Program
     public static void Main(string[] args)
     {
        DatabaseManager dbManager = new DatabaseManager();
+
         // dbManager.createTable();
-         
-        AlterTable alter = new AlterTable();
+        //dbManager.addColumn("employee", "deneme", "VARCHAR(50)",false);
+       // dbManager.addColumn("employee", "deneme2", "VARCHAR(50)", false);
+        dbManager.dropColumn("employee","deneme2");
+
         
     }
 }
