@@ -6,11 +6,11 @@ public static class Program
     {
        DatabaseManager dbManager = new DatabaseManager();
 
-        // dbManager.createTable();
-         dbManager.addColumn("employee", "denemee", "VARCHAR(50)",false);
-       dbManager.addColumn("employee", "deneme2", "VARCHAR(50)", false);
-        dbManager.dropColumn("employee","denemee");
-
-        
+        //dbManager.createTable("DenemeTablo", "denemekolon", "int", true);
+        //dbManager.addColumn("DenemeTablo", "denemekolon6", "varchar", false,"null");
+        //dbManager.addColumn("DenemeTablo", "denemekolon7", "float", false,"not null");
+        //dbManager.addColumn("DenemeTablo", "denemekolon8", "datetime", false,"not");
+        //dbManager.addColumn("DenemeTablo", "denemekolon9", "float", false);
+        dbManager.updateColumnType("denemetablo", "deneme", "int");
     }
 }

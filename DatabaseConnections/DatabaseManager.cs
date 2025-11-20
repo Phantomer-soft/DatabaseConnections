@@ -19,6 +19,8 @@ namespace DatabaseConnections
             alterTable.AddColumn(tableName, columnName, dataType, primaryKey,nullAble);
         public void dropColumn(string tableName,string columnName) => 
             alterTable.DropColumn(tableName,columnName);
+        public void updateColumnType(string tableName, string columnName, string newDataType)=> 
+            alterTable.UpdateColumnType(tableName,columnName,newDataType);
 
     }
 
@@ -35,43 +37,44 @@ namespace DatabaseConnections
         public AlterTable() { }
 
         State state = new State();
-       
+        string primary="";
         SqlCommand cmd = new SqlCommand();
         SqlConnection con = DatabaseConnection.con;
-        public void CreateTable(string tableName, string columnName, string dataType, bool primaryKey)
-        {
-            tableName= tableName.Trim().ToUpper();
-            columnName= columnName.Trim().ToUpper();
-            dataType= dataType.Trim().ToUpper();
-            switch (primaryKey)
+            public void CreateTable(string tableName, string columnName, string dataType, bool primaryKey)
+            {
+                tableName= tableName.Trim().ToUpper();
+                columnName= columnName.Trim();
+
+               if(state.DataTypeController(dataType)) dataType = dataType.Trim();
+               else  dataType = "VARCHAR(50)"; // VARSAYILAN DEĞER TÜRÜ
+
+                    switch (primaryKey)
+                    {
+                        case true:
+                            primary = "PRIMARY KEY";
+                            break;
+                        case false:
+                            break;
+                    }//PRİMARY KEY KONTROLU VARSAYILAN FALSE - Primary key check
+                try 
                 {
-                    case true:
-                        dataType += " PRIMARY KEY";
-                        break;
-                    case false:
-                        break;
-                }//PRİMARY KEY KONTROLU VARSAYILAN FALSE - Primary key check
-            try 
-            {
+                    con.Open();
+                    cmd.Connection = con;
+                    cmd.CommandText = $"CREATE TABLE {tableName}( {columnName} {dataType} {primary})";// SQL INJECTION VULNERABILITY
+                    Console.WriteLine(cmd.CommandText);
+                    cmd.ExecuteNonQuery();                
+                    Console.WriteLine(state.GetState(true,"CreateTable"));// OPERATION SUCCESSFUL                
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    state.printState(ex);               
 
-                con.Open();
-                cmd.Connection = con;
-                cmd.CommandText = $"CREATE TABLE {tableName} ({columnName} {dataType})";// SQL INJECTION VULNERABILITY
-                cmd.Parameters.AddWithValue("@" + columnName, dataType);// SQL INJECTION PROTECTION
-                cmd.ExecuteNonQuery();
-                Console.WriteLine(state.GetState(true,"CreateTable"));// OPERATION SUCCESSFUL                
-                con.Close();
+                }
+            finally {con.Close(); }
 
 
             }
-            catch (Exception ex)
-            {
-                state.printState(ex);               
-
-            }
-
-
-        }
         public void AddColumn(string tableName,string columnName, string dataType,bool primaryKey)
         {        // NULLABLE KONTROLÜ YOK
             
@@ -131,7 +134,6 @@ namespace DatabaseConnections
                 con.Open();
                 cmd.Connection = con;
                 cmd.CommandText = $"ALTER TABLE {tableName} DROP COLUMN {columnName}";
-                cmd.Parameters.AddWithValue("@",columnName);
                 cmd.ExecuteNonQuery();
                 Console.WriteLine(state.GetState(true,"DropColumn"));
             }
@@ -143,17 +145,29 @@ namespace DatabaseConnections
             finally { con.Close(); }
 
         }
-        public void RenameColumn(string oldName, string newName)
+        public void UpdateColumnType(string tableName,string columnName, string newDataType)
         {
-            // Implementation for renaming a column
-        }
-        public void UpdateColumnType(string columnName, string newDataType)
-        {
-            // Implementation for updating a column type
+            tableName = tableName.Trim().ToUpper();
+            columnName = columnName.Trim().ToUpper();
+            if (!state.DataTypeController(newDataType)) newDataType = "VARCHAR(50)";
+            try
+            {
+                con.Open();
+                cmd.Connection = con;
+                cmd.CommandText = $"ALTER TABLE {tableName} ALTER COLUMN {columnName} {newDataType}";
+                cmd.ExecuteNonQuery();
+                Console.WriteLine(state.GetState(true, "UpdateColumnType"));
+            }
+            catch (Exception ex)
+            {
+                state.printState(ex, "UpdateColumnType");
+            }
+            finally { con.Close(); }
+
         }
     }
 
-    public class CRUDE
+    public class CRUD
     {
         public void Create()
         {
@@ -202,6 +216,7 @@ namespace DatabaseConnections
         {// PROBLEM => TEMEL TİPLER KABUL EDİLİYOR AMA VARCHAR(50) GİBİ BİR DEĞER GELİRSE BU NASIL KABUL EDİLİR 
             dataType = dataType.Trim().ToLower();
             StringBuilder baseTypeBuilder = new StringBuilder(); // BU ÇÖZÜM İŞE YARAYABİLİR 
+             
             foreach (char c in dataType)
             {
                 if (c == '(') break;   //(v a r c h a r ) X (50)
@@ -209,17 +224,23 @@ namespace DatabaseConnections
             }
 
              dataType = baseTypeBuilder.ToString().Trim(); // DATATYPE İLE İŞİMİZ BİTTİ YENİ HALİ KULLANILABİLİR 
-
+            
             switch (dataType)
             {
+                
                 case "bigint":
                 case "binary":
                 case "char":
                 case "varchar":
                 case "nchar":
                 case "nvarchar":
+                case "date":
+                case "datetime":
+                case "datetime2":
+                case "datetimeoffset":
+                case "float":
+                case "int":
                     return true;
-
                 default:return false;
             }
             
