@@ -1,7 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.SqlClient;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 namespace DatabaseConnections
 {
     public class DatabaseManager
@@ -32,7 +35,7 @@ namespace DatabaseConnections
         public AlterTable() { }
 
         State state = new State();
-
+       
         SqlCommand cmd = new SqlCommand();
         SqlConnection con = DatabaseConnection.con;
         public void CreateTable(string tableName, string columnName, string dataType, bool primaryKey)
@@ -51,12 +54,12 @@ namespace DatabaseConnections
             try 
             {
 
-                con.Open();                
+                con.Open();
                 cmd.Connection = con;
                 cmd.CommandText = $"CREATE TABLE {tableName} ({columnName} {dataType})";// SQL INJECTION VULNERABILITY
                 cmd.Parameters.AddWithValue("@" + columnName, dataType);// SQL INJECTION PROTECTION
                 cmd.ExecuteNonQuery();
-                cmd.StatementCompleted += (sender, e) =>Console.WriteLine(state.GetState(true));// OPERATION SUCCESSFUL                
+                Console.WriteLine(state.GetState(true,"CreateTable"));// OPERATION SUCCESSFUL                
                 con.Close();
 
 
@@ -81,12 +84,12 @@ namespace DatabaseConnections
                 cmd.Connection = con;
                 cmd.CommandText = $"ALTER TABLE {tableName} ADD {columnName} {dataType}";// SQL INJECTION VULNERABILITY               
                 cmd.ExecuteNonQuery();
-                state.GetState(true);
+                Console.WriteLine(state.GetState(true,"AddColumn"));
                 
             }
             catch (Exception ex)
             {
-              state.printState(ex);
+              state.printState(ex,"AddColumn");
             }
             finally {con.Close(); }
 
@@ -107,12 +110,12 @@ namespace DatabaseConnections
                 cmd.Connection = con;
                 cmd.CommandText = $"ALTER TABLE {tableName} ADD {columnName} {dataType} {nullAble}";// SQL INJECTION VULNERABILITY               
                 cmd.ExecuteNonQuery();
-                state.GetState(true);
+                 Console.WriteLine(state.GetState(true,"AddColumn"));
 
             }
             catch (Exception ex)
             {
-                state.printState(ex);
+                state.printState(ex,"AddColumn");
             }
             finally { con.Close(); }
 
@@ -130,12 +133,12 @@ namespace DatabaseConnections
                 cmd.CommandText = $"ALTER TABLE {tableName} DROP COLUMN {columnName}";
                 cmd.Parameters.AddWithValue("@",columnName);
                 cmd.ExecuteNonQuery();
-                state.GetState(true);
+                Console.WriteLine(state.GetState(true,"DropColumn"));
             }
 
             catch (Exception ex)
             {
-                state.printState(ex);
+                state.printState(ex, "DropColumn");
             }
             finally { con.Close(); }
 
@@ -171,35 +174,50 @@ namespace DatabaseConnections
     }
     public class State
     {
-        bool success = false;
         public String GetState(bool success)
         {
             if (success)            
                 return "Operation completed successfully";
 
-            return"An error has been occured";
+            return "An error has been accrued";
         }
         public void printState(Exception ex)
         {
-            Console.WriteLine("An error has been occured : "+ex.Message);
+            Console.WriteLine("An error has been accrued : " + ex.Message);
+        }
+
+        public String GetState(bool success, [CallerMemberName] string callerName = "")
+        {
+            if (success)
+                return $"{callerName} : Operation completed successfully";
+
+            return $"{callerName} : An error has been accrued";
+        }
+        public void printState(Exception ex,[CallerMemberName] string callerName="")
+        {
+            Console.WriteLine($"{callerName}: An error has been accrued : " + ex.Message);
         }
 
         public bool DataTypeController(string dataType)  // EMİN DEĞİLİM BU GELİŞTİRİLEBİLİR DAHA AZ KARMAŞIK BİR YAPI KURULABİLİR
         {// PROBLEM => TEMEL TİPLER KABUL EDİLİYOR AMA VARCHAR(50) GİBİ BİR DEĞER GELİRSE BU NASIL KABUL EDİLİR 
             dataType = dataType.Trim().ToLower();
-            for(int i = 0; i < dataType.Length;)
+            StringBuilder baseTypeBuilder = new StringBuilder(); // BU ÇÖZÜM İŞE YARAYABİLİR 
+            foreach (char c in dataType)
             {
-                char c = dataType[i];
-                if(c == '(')
-                {
-
-                }
+                if (c == '(') break;   //(v a r c h a r ) X (50)
+                baseTypeBuilder.Append(c);
             }
+
+             dataType = baseTypeBuilder.ToString().Trim(); // DATATYPE İLE İŞİMİZ BİTTİ YENİ HALİ KULLANILABİLİR 
 
             switch (dataType)
             {
                 case "bigint":
                 case "binary":
+                case "char":
+                case "varchar":
+                case "nchar":
+                case "nvarchar":
                     return true;
 
                 default:return false;
